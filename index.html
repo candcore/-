@@ -2,15 +2,19 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Fingerprint Heart</title>
+<title>Big Fingerprint Heart</title>
+
 <style>
   body {
     margin: 0;
     background: white;
-    height: 100vh;
+    overflow: hidden;
+
     display: flex;
     justify-content: center;
     align-items: center;
+
+    height: 100vh;
   }
 
   canvas {
@@ -18,9 +22,10 @@
   }
 </style>
 </head>
+
 <body>
 
-<canvas id="canvas" width="700" height="500"></canvas>
+<canvas id="canvas" width="1200" height="800"></canvas>
 
 <script>
 const canvas = document.getElementById("canvas");
@@ -29,38 +34,63 @@ const ctx = canvas.getContext("2d");
 let frame = 0;
 const lines = [];
 
+// Форма сердца
 function heart(px, py) {
-  let x = (px - 350) / 140;
-  let y = -(py - 255) / 140;
 
-  const v = Math.pow(x * x + y * y - 1, 3) - x * x * y * y * y;
-  return v <= 0;
+  let x = (px - 600) / 250;
+  let y = -(py - 400) / 250;
+
+  const formula =
+    Math.pow(x * x + y * y - 1, 3) -
+    x * x * y * y * y;
+
+  return formula <= 0;
 }
 
+// Создание отпечатка
 function makePrint(cx, cy, rotate, side) {
-  for (let r = 10; r < 125; r += 5) {
+
+  for (let r = 15; r < 220; r += 6) {
+
     const points = [];
 
-    for (let a = 0; a < Math.PI * 2; a += 0.025) {
-      let rx = r * 0.75;
-      let ry = r * 1.05;
+    for (let a = 0; a < Math.PI * 2; a += 0.02) {
 
-      let wave = Math.sin(a * 12 + r * 0.15) * 2.8;
+      let rx = r * 0.78;
+      let ry = r * 1.08;
 
-      let x = Math.cos(a) * (rx + wave);
-      let y = Math.sin(a) * (ry + wave);
+      // волны как у отпечатка
+      let wave =
+        Math.sin(a * 12 + r * 0.15) * 3;
 
-      if (side === "left" && x > 60) continue;
-      if (side === "right" && x < -60) continue;
+      let x =
+        Math.cos(a) * (rx + wave);
 
-      const xr = x * Math.cos(rotate) - y * Math.sin(rotate);
-      const yr = x * Math.sin(rotate) + y * Math.cos(rotate);
+      let y =
+        Math.sin(a) * (ry + wave);
+
+      // разделяем левую и правую часть
+      if (side === "left" && x > 70) continue;
+      if (side === "right" && x < -70) continue;
+
+      // поворот
+      const xr =
+        x * Math.cos(rotate) -
+        y * Math.sin(rotate);
+
+      const yr =
+        x * Math.sin(rotate) +
+        y * Math.cos(rotate);
 
       const px = cx + xr;
       const py = cy + yr;
 
+      // только внутри сердца
       if (heart(px, py)) {
-        points.push({ x: px, y: py });
+        points.push({
+          x: px,
+          y: py
+        });
       }
     }
 
@@ -70,19 +100,38 @@ function makePrint(cx, cy, rotate, side) {
   }
 }
 
-makePrint(290, 250, -0.55, "left");
-makePrint(410, 250, 0.55, "right");
+// Левый отпечаток
+makePrint(
+  470,
+  390,
+  -0.55,
+  "left"
+);
 
+// Правый отпечаток
+makePrint(
+  730,
+  390,
+  0.55,
+  "right"
+);
+
+// Рисование линии
 function drawBrokenLine(points, percent) {
-  const max = Math.floor(points.length * percent);
+
+  const max =
+    Math.floor(points.length * percent);
 
   ctx.beginPath();
+
   let drawing = false;
 
   for (let i = 0; i < max; i++) {
+
     const p = points[i];
 
-    if (Math.random() < 0.025) {
+    // разрывы как у реального отпечатка
+    if (Math.random() < 0.02) {
       drawing = false;
       continue;
     }
@@ -98,26 +147,49 @@ function drawBrokenLine(points, percent) {
   ctx.stroke();
 }
 
+// Анимация
 function animate() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  ctx.lineWidth = 1.6;
-  ctx.strokeStyle = "rgba(10, 10, 10, 0.9)";
+  ctx.clearRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+
+  ctx.lineWidth = 2;
+
+  ctx.strokeStyle =
+    "rgba(20,20,20,0.92)";
+
   ctx.lineCap = "round";
 
-  const progress = Math.min(frame / 170, 1);
+  const progress =
+    Math.min(frame / 180, 1);
 
   for (let i = 0; i < lines.length; i++) {
-    let delay = i / lines.length;
-    let p = (progress - delay * 0.45) * 2.2;
-    p = Math.max(0, Math.min(1, p));
+
+    const delay =
+      i / lines.length;
+
+    let p =
+      (progress - delay * 0.42) * 2.3;
+
+    p = Math.max(
+      0,
+      Math.min(1, p)
+    );
 
     if (p > 0) {
-      drawBrokenLine(lines[i], p);
+      drawBrokenLine(
+        lines[i],
+        p
+      );
     }
   }
 
   frame++;
+
   requestAnimationFrame(animate);
 }
 
