@@ -8,6 +8,7 @@
     margin: 0;
     background: white;
     height: 100vh;
+    overflow: hidden;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -20,106 +21,90 @@
 </head>
 <body>
 
-<canvas id="canvas" width="1000" height="700"></canvas>
+<canvas id="canvas"></canvas>
 
 <script>
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const cx = canvas.width / 2;
+const cy = canvas.height / 2 + 40;
+
 let frame = 0;
-const firstPrint = [];
-const secondPrint = [];
 
-function heart(px, py) {
-  const x = (px - 500) / 215;
-  const y = -(py - 350) / 215;
+const leftLines = [];
+const rightLines = [];
 
-  return Math.pow(x * x + y * y - 1, 3) - x * x * y * y * y <= 0;
-}
-
-function createFingerprint(cx, cy, rotate, store) {
-  for (let r = 10; r < 210; r += 6) {
+function makeFinger(offsetX, offsetY, angle, side, storage) {
+  for (let r = 18; r < 150; r += 5) {
     const line = [];
 
-    for (let a = 0; a < Math.PI * 2; a += 0.025) {
-      const rx = r * 0.62;
-      const ry = r * 1.05;
+    for (let a = -Math.PI * 0.9; a < Math.PI * 0.9; a += 0.025) {
+      const wave = Math.sin(a * 12 + r * 0.18) * 2.5;
 
-      const wave = Math.sin(a * 11 + r * 0.13) * 3.5;
+      let x = Math.cos(a) * (r * 0.62 + wave);
+      let y = Math.sin(a) * (r * 1.05 + wave);
 
-      let x = Math.cos(a) * (rx + wave);
-      let y = Math.sin(a) * (ry + wave);
+      if (side === "left" && x > 22) continue;
+      if (side === "right" && x < -22) continue;
 
-      const xr = x * Math.cos(rotate) - y * Math.sin(rotate);
-      const yr = x * Math.sin(rotate) + y * Math.cos(rotate);
+      const xr = x * Math.cos(angle) - y * Math.sin(angle);
+      const yr = x * Math.sin(angle) + y * Math.cos(angle);
 
-      const px = cx + xr;
-      const py = cy + yr;
-
-      if (heart(px, py)) {
-        line.push({ x: px, y: py });
-      }
+      line.push({
+        x: cx + offsetX + xr,
+        y: cy + offsetY + yr
+      });
     }
 
-    if (line.length > 8) store.push(line);
+    if (line.length > 4) storage.push(line);
   }
 }
 
-createFingerprint(430, 360, -0.72, firstPrint);
-createFingerprint(570, 330, 0.62, secondPrint);
+makeFinger(-78, 0, -0.55, "left", leftLines);
+makeFinger(78, 0, 0.55, "right", rightLines);
 
-function drawLine(points, progress, alpha) {
-  const max = Math.floor(points.length * progress);
+function drawLines(lines, progress, alpha) {
+  ctx.strokeStyle = `rgba(20,20,20,${alpha})`;
+  ctx.lineWidth = 1.8;
+  ctx.lineCap = "round";
 
-  ctx.beginPath();
-  let drawing = false;
-
-  for (let i = 0; i < max; i++) {
-    if (Math.random() < 0.018) {
-      drawing = false;
-      continue;
-    }
-
-    const p = points[i];
-
-    if (!drawing) {
-      ctx.moveTo(p.x, p.y);
-      drawing = true;
-    } else {
-      ctx.lineTo(p.x, p.y);
-    }
-  }
-
-  ctx.strokeStyle = `rgba(40,40,40,${alpha})`;
-  ctx.stroke();
-}
-
-function drawFingerprint(lines, progress, alpha) {
   for (let i = 0; i < lines.length; i++) {
     const delay = i / lines.length;
-    let p = (progress - delay * 0.5) * 2;
+    let p = (progress - delay * 0.35) * 1.8;
     p = Math.max(0, Math.min(1, p));
 
-    if (p > 0) {
-      drawLine(lines[i], p, alpha);
+    if (p <= 0) continue;
+
+    const points = lines[i];
+    const count = Math.floor(points.length * p);
+
+    ctx.beginPath();
+
+    for (let j = 0; j < count; j++) {
+      const pt = points[j];
+
+      if (j === 0) ctx.moveTo(pt.x, pt.y);
+      else ctx.lineTo(pt.x, pt.y);
     }
+
+    ctx.stroke();
   }
 }
 
 function animate() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  ctx.lineWidth = 2;
-  ctx.lineCap = "round";
-
   const firstProgress = Math.min(frame / 120, 1);
-  const secondProgress = Math.min(Math.max((frame - 120) / 120, 0), 1);
+  const secondProgress = Math.min(Math.max((frame - 90) / 120, 0), 1);
 
-  drawFingerprint(firstPrint, firstProgress, 0.18);
-  drawFingerprint(secondPrint, secondProgress, 0.65);
+  drawLines(leftLines, firstProgress, 0.95);
+  drawLines(rightLines, secondProgress, 0.95);
 
   frame++;
-
   requestAnimationFrame(animate);
 }
 
