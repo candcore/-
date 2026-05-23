@@ -2,114 +2,39 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Fingerprint Heart</title>
+<title>Fade Image</title>
+
 <style>
   body {
     margin: 0;
     background: white;
     height: 100vh;
-    overflow: hidden;
     display: flex;
     justify-content: center;
     align-items: center;
   }
 
-  canvas {
-    background: white;
+  img {
+    width: 420px;
+    opacity: 0;
+    animation: fadeIn 3s ease forwards;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
   }
 </style>
 </head>
 <body>
 
-<canvas id="canvas"></canvas>
-
-<script>
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
-
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-
-const cx = canvas.width / 2;
-const cy = canvas.height / 2 + 40;
-
-let frame = 0;
-
-const leftLines = [];
-const rightLines = [];
-
-function makeFinger(offsetX, offsetY, angle, side, storage) {
-  for (let r = 18; r < 150; r += 5) {
-    const line = [];
-
-    for (let a = -Math.PI * 0.9; a < Math.PI * 0.9; a += 0.025) {
-      const wave = Math.sin(a * 12 + r * 0.18) * 2.5;
-
-      let x = Math.cos(a) * (r * 0.62 + wave);
-      let y = Math.sin(a) * (r * 1.05 + wave);
-
-      if (side === "left" && x > 22) continue;
-      if (side === "right" && x < -22) continue;
-
-      const xr = x * Math.cos(angle) - y * Math.sin(angle);
-      const yr = x * Math.sin(angle) + y * Math.cos(angle);
-
-      line.push({
-        x: cx + offsetX + xr,
-        y: cy + offsetY + yr
-      });
-    }
-
-    if (line.length > 4) storage.push(line);
-  }
-}
-
-makeFinger(-78, 0, -0.55, "left", leftLines);
-makeFinger(78, 0, 0.55, "right", rightLines);
-
-function drawLines(lines, progress, alpha) {
-  ctx.strokeStyle = `rgba(20,20,20,${alpha})`;
-  ctx.lineWidth = 1.8;
-  ctx.lineCap = "round";
-
-  for (let i = 0; i < lines.length; i++) {
-    const delay = i / lines.length;
-    let p = (progress - delay * 0.35) * 1.8;
-    p = Math.max(0, Math.min(1, p));
-
-    if (p <= 0) continue;
-
-    const points = lines[i];
-    const count = Math.floor(points.length * p);
-
-    ctx.beginPath();
-
-    for (let j = 0; j < count; j++) {
-      const pt = points[j];
-
-      if (j === 0) ctx.moveTo(pt.x, pt.y);
-      else ctx.lineTo(pt.x, pt.y);
-    }
-
-    ctx.stroke();
-  }
-}
-
-function animate() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  const firstProgress = Math.min(frame / 120, 1);
-  const secondProgress = Math.min(Math.max((frame - 90) / 120, 0), 1);
-
-  drawLines(leftLines, firstProgress, 0.95);
-  drawLines(rightLines, secondProgress, 0.95);
-
-  frame++;
-  requestAnimationFrame(animate);
-}
-
-animate();
-</script>
+<img src="https://raw.githubusercontent.com/candcore/-/refs/heads/main/Изображение%20HEIF.heic" alt="fingerprint heart">
 
 </body>
 </html>
