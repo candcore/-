@@ -2,19 +2,15 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Big Fingerprint Heart</title>
-
+<title>Fingerprint Heart</title>
 <style>
   body {
     margin: 0;
     background: white;
-    overflow: hidden;
-
+    height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
-
-    height: 100vh;
   }
 
   canvas {
@@ -22,119 +18,69 @@
   }
 </style>
 </head>
-
 <body>
 
-<canvas id="canvas" width="1200" height="800"></canvas>
+<canvas id="canvas" width="1000" height="700"></canvas>
 
 <script>
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
 let frame = 0;
-const lines = [];
+const firstPrint = [];
+const secondPrint = [];
 
-// Форма сердца
 function heart(px, py) {
+  const x = (px - 500) / 215;
+  const y = -(py - 350) / 215;
 
-  let x = (px - 600) / 250;
-  let y = -(py - 400) / 250;
-
-  const formula =
-    Math.pow(x * x + y * y - 1, 3) -
-    x * x * y * y * y;
-
-  return formula <= 0;
+  return Math.pow(x * x + y * y - 1, 3) - x * x * y * y * y <= 0;
 }
 
-// Создание отпечатка
-function makePrint(cx, cy, rotate, side) {
+function createFingerprint(cx, cy, rotate, store) {
+  for (let r = 10; r < 210; r += 6) {
+    const line = [];
 
-  for (let r = 15; r < 220; r += 6) {
+    for (let a = 0; a < Math.PI * 2; a += 0.025) {
+      const rx = r * 0.62;
+      const ry = r * 1.05;
 
-    const points = [];
+      const wave = Math.sin(a * 11 + r * 0.13) * 3.5;
 
-    for (let a = 0; a < Math.PI * 2; a += 0.02) {
+      let x = Math.cos(a) * (rx + wave);
+      let y = Math.sin(a) * (ry + wave);
 
-      let rx = r * 0.78;
-      let ry = r * 1.08;
-
-      // волны как у отпечатка
-      let wave =
-        Math.sin(a * 12 + r * 0.15) * 3;
-
-      let x =
-        Math.cos(a) * (rx + wave);
-
-      let y =
-        Math.sin(a) * (ry + wave);
-
-      // разделяем левую и правую часть
-      if (side === "left" && x > 70) continue;
-      if (side === "right" && x < -70) continue;
-
-      // поворот
-      const xr =
-        x * Math.cos(rotate) -
-        y * Math.sin(rotate);
-
-      const yr =
-        x * Math.sin(rotate) +
-        y * Math.cos(rotate);
+      const xr = x * Math.cos(rotate) - y * Math.sin(rotate);
+      const yr = x * Math.sin(rotate) + y * Math.cos(rotate);
 
       const px = cx + xr;
       const py = cy + yr;
 
-      // только внутри сердца
       if (heart(px, py)) {
-        points.push({
-          x: px,
-          y: py
-        });
+        line.push({ x: px, y: py });
       }
     }
 
-    if (points.length > 5) {
-      lines.push(points);
-    }
+    if (line.length > 8) store.push(line);
   }
 }
 
-// Левый отпечаток
-makePrint(
-  470,
-  390,
-  -0.55,
-  "left"
-);
+createFingerprint(430, 360, -0.72, firstPrint);
+createFingerprint(570, 330, 0.62, secondPrint);
 
-// Правый отпечаток
-makePrint(
-  730,
-  390,
-  0.55,
-  "right"
-);
-
-// Рисование линии
-function drawBrokenLine(points, percent) {
-
-  const max =
-    Math.floor(points.length * percent);
+function drawLine(points, progress, alpha) {
+  const max = Math.floor(points.length * progress);
 
   ctx.beginPath();
-
   let drawing = false;
 
   for (let i = 0; i < max; i++) {
-
-    const p = points[i];
-
-    // разрывы как у реального отпечатка
-    if (Math.random() < 0.02) {
+    if (Math.random() < 0.018) {
       drawing = false;
       continue;
     }
+
+    const p = points[i];
 
     if (!drawing) {
       ctx.moveTo(p.x, p.y);
@@ -144,49 +90,33 @@ function drawBrokenLine(points, percent) {
     }
   }
 
+  ctx.strokeStyle = `rgba(40,40,40,${alpha})`;
   ctx.stroke();
 }
 
-// Анимация
-function animate() {
-
-  ctx.clearRect(
-    0,
-    0,
-    canvas.width,
-    canvas.height
-  );
-
-  ctx.lineWidth = 2;
-
-  ctx.strokeStyle =
-    "rgba(20,20,20,0.92)";
-
-  ctx.lineCap = "round";
-
-  const progress =
-    Math.min(frame / 180, 1);
-
+function drawFingerprint(lines, progress, alpha) {
   for (let i = 0; i < lines.length; i++) {
-
-    const delay =
-      i / lines.length;
-
-    let p =
-      (progress - delay * 0.42) * 2.3;
-
-    p = Math.max(
-      0,
-      Math.min(1, p)
-    );
+    const delay = i / lines.length;
+    let p = (progress - delay * 0.5) * 2;
+    p = Math.max(0, Math.min(1, p));
 
     if (p > 0) {
-      drawBrokenLine(
-        lines[i],
-        p
-      );
+      drawLine(lines[i], p, alpha);
     }
   }
+}
+
+function animate() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.lineWidth = 2;
+  ctx.lineCap = "round";
+
+  const firstProgress = Math.min(frame / 120, 1);
+  const secondProgress = Math.min(Math.max((frame - 120) / 120, 0), 1);
+
+  drawFingerprint(firstPrint, firstProgress, 0.18);
+  drawFingerprint(secondPrint, secondProgress, 0.65);
 
   frame++;
 
